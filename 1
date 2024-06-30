@@ -1,0 +1,55 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract RealEstateToken is ERC721, Ownable {
+    struct Property {
+        uint256 id;
+        string name;
+        string location;
+        uint256 value;
+        address owner;
+    }
+
+    uint256 public propertyCounter;
+    mapping(uint256 => Property) public properties;
+
+    event PropertyRegistered(uint256 id, string name, string location, uint256 value, address owner);
+    event OwnershipTransferred(uint256 id, address indexed previousOwner, address indexed newOwner);
+
+    constructor() ERC721("RealEstateToken", "RET") {}
+
+    function registerProperty(string memory _name, string memory _location, uint256 _value) public onlyOwner {
+        propertyCounter++;
+        uint256 newPropertyId = propertyCounter;
+
+        properties[newPropertyId] = Property({
+            id: newPropertyId,
+            name: _name,
+            location: _location,
+            value: _value,
+            owner: msg.sender
+        });
+
+        _mint(msg.sender, newPropertyId);
+
+        emit PropertyRegistered(newPropertyId, _name, _location, _value, msg.sender);
+    }
+
+    function transferOwnership(uint256 _propertyId, address _newOwner) public {
+        require(ownerOf(_propertyId) == msg.sender, "You are not the owner");
+        require(_newOwner != address(0), "Invalid address");
+
+        _transfer(msg.sender, _newOwner);
+
+        properties[_propertyId].owner = _newOwner;
+
+        emit OwnershipTransferred(_propertyId, msg.sender, _newOwner);
+    }
+
+    function getProperty(uint256 _propertyId) public view returns (Property memory) {
+        return properties[_propertyId];
+    }
+}
